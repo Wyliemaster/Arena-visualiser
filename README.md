@@ -4,6 +4,12 @@ I built an arena allocator and a visualiser for it using OpenGL and GLFW.
 
 This was my first time using OpenGL, so the code probably isn't the prettiest, but it was a really fun project and a great way to learn some graphics programming.
 
+> <img src="img/demo.png" alt="demo" width="200"/>
+> 
+> Red: Unavailable Memory  
+> Green: Available Memory  
+> Grey: Unused Memory  
+
 ## Cloning
 
 I've attempted to include all dependencies as vendors, so ideally cloning recursively should be all you need to download and build the project
