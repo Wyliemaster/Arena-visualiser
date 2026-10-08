@@ -20,14 +20,13 @@ void Arena::free_arena()
     }
 }
 
-void Arena::free_region(std::uintptr_t region)
+void Arena::free_region(void* region)
 {
-    std::optional<std::reference_wrapper<Arena::Event>> evt = this->find_contained_region(region);
+    std::optional<std::reference_wrapper<Arena::Event>> evt = this->find_contained_region(reinterpret_cast<std::uintptr_t>(region) - reinterpret_cast<std::uintptr_t>(this->arena));
 
     if (!evt) return;
 
     evt->get().state = Arena::EventState::FREE;
-    evt->get().size = {};
 }
 
 void *Arena::alloc(std::size_t bytes)

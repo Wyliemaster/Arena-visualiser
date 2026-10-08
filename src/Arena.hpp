@@ -8,9 +8,11 @@
 #include <optional>
 #include <limits>
 #include <stdexcept>
-    
+#include <iostream>
+
 class Arena
 {
+    friend class Visualiser;
 public:
     Arena(std::size_t size, std::size_t alignment = alignof(std::max_align_t))
     {
@@ -35,7 +37,7 @@ public:
 
     void free_arena();
     void *alloc(std::size_t bytes);
-    void free_region(std::uintptr_t region);
+    void free_region(void* region);
 
 public:
     enum class EventState : uint8_t
