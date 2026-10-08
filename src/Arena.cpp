@@ -7,8 +7,33 @@ static constexpr std::optional<std::size_t> safe_add(std::size_t a, std::size_t 
     return a + b;
 }
 
+void Arena::free_arena()
+{
+    this->size = {};
+    this->alignment = {};
+    this->state_table.clear();
+
+    if (this->arena)
+    {
+        free(this->arena);
+        this->arena = nullptr;
+    }
+}
+
+void Arena::free_region(std::uintptr_t region)
+{
+    std::optional<std::reference_wrapper<Arena::Event>> evt = this->find_contained_region(region);
+
+    if (!evt) return;
+
+    evt->get().state = Arena::EventState::FREE;
+    evt->get().size = {};
+}
+
 void *Arena::alloc(std::size_t bytes)
 {
+    if (bytes == 0) throw std::bad_alloc{};
+
     std::size_t aligned_bytes = this->align(bytes);
 
     for (std::size_t addr = 0; addr < this->size; addr += this->alignment)

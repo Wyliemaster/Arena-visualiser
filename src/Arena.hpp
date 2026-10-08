@@ -28,8 +28,14 @@ public:
             throw std::bad_alloc{};
     }
 
+    ~Arena()
+    {
+        free_arena();
+    }
+
+    void free_arena();
     void *alloc(std::size_t bytes);
-    void free(std::uintptr_t region);
+    void free_region(std::uintptr_t region);
 
 public:
     enum class EventState : uint8_t
