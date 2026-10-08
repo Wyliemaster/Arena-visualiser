@@ -25,7 +25,7 @@ void *Arena::alloc(std::size_t bytes)
 
         if (region)
         {
-
+            region->get().region = addr;
             region->get().size = aligned_bytes;
             region->get().state = Arena::EventState::ALLOC;
 

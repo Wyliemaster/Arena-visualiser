@@ -8,7 +8,7 @@
 #include <optional>
 #include <limits>
 #include <stdexcept>
-
+    
 class Arena
 {
 public:
