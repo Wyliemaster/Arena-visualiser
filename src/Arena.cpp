@@ -37,7 +37,10 @@ void *Arena::alloc(std::size_t bytes)
         evt.state = Arena::EventState::ALLOC;
         evt.region = addr;
 
-        this->history.push_back(evt);
+        {
+            std::lock_guard<std::mutex> lock(this->mtx);
+            this->state_table.push_back(evt);
+        }
 
         return static_cast<void *>(static_cast<std::byte *>(this->arena) + addr);
     }
@@ -47,7 +50,7 @@ void *Arena::alloc(std::size_t bytes)
 
 std::optional<std::reference_wrapper<Arena::Event>> Arena::find_contained_region(std::uintptr_t addr)
 {
-    for (Arena::Event &entry : this->history)
+    for (Arena::Event &entry : this->state_table)
     {
         auto entry_end = safe_add(entry.region, entry.size);
 
@@ -64,12 +67,14 @@ std::optional<std::reference_wrapper<Arena::Event>> Arena::find_contained_region
 
 bool Arena::available(std::size_t addr, std::size_t length) const
 {
+    std::lock_guard<std::mutex> lock(this->mtx);
+
     const auto end = safe_add(addr, length);
 
     if (!end)
         throw std::overflow_error("Arena allocation range overflow");
 
-    for (const Arena::Event& event : this->history)
+    for (const Arena::Event& event : this->state_table)
     {
         if (event.state != Arena::EventState::ALLOC)
             continue;

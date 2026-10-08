@@ -53,14 +53,13 @@ private:
     }
 
     bool available(std::size_t addr, std::size_t length) const;
-std::optional<std::reference_wrapper<Arena::Event>> find_contained_region(std::uintptr_t addr);
-
+    std::optional<std::reference_wrapper<Arena::Event>> find_contained_region(std::uintptr_t addr);
 
 private:
     void *arena;
     size_t size;
     size_t alignment;
-    std::vector<Arena::Event> history;
+    std::vector<Arena::Event> state_table;
 };
 
 #endif
