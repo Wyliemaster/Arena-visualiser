@@ -1,23 +1,33 @@
 #include "Arena.hpp"
 
+static constexpr std::optional<std::size_t> safe_add(std::size_t a, std::size_t b)
+{
+    if (a > std::numeric_limits<std::size_t>::max() - b)
+        return std::nullopt;
+    return a + b;
+}
+
 void *Arena::alloc(std::size_t bytes)
 {
     std::size_t aligned_bytes = this->align(bytes);
 
     for (std::size_t addr = 0; addr < this->size; addr += this->alignment)
     {
-        if (!this->available(addr))
-            continue;
-        if (this->size < (addr + aligned_bytes))
+        std::optional<std::size_t> end = safe_add(addr, aligned_bytes);
+
+        if (!end || *end > this->size)
+            break;
+
+        if (!this->available(addr, aligned_bytes))
             continue;
 
-        auto region = this->find_region_in_history(addr);
+        auto region = this->find_contained_region(addr);
 
         if (region)
         {
+
             region->get().size = aligned_bytes;
             region->get().state = Arena::EventState::ALLOC;
-            region->get().region = addr;
 
             return static_cast<void *>(static_cast<std::byte *>(this->arena) + addr);
         }
@@ -30,17 +40,20 @@ void *Arena::alloc(std::size_t bytes)
         this->history.push_back(evt);
 
         return static_cast<void *>(static_cast<std::byte *>(this->arena) + addr);
-
     }
 
     throw std::bad_alloc{};
 }
 
-std::optional<std::reference_wrapper<Arena::Event>> Arena::find_region_in_history(std::uintptr_t memory)
+std::optional<std::reference_wrapper<Arena::Event>> Arena::find_contained_region(std::uintptr_t addr)
 {
     for (Arena::Event &entry : this->history)
     {
-        if (entry.region <= memory && memory < (entry.region + entry.size))
+        auto entry_end = safe_add(entry.region, entry.size);
+
+        if (!entry_end) continue;
+
+        if (entry.region <= addr && addr < *entry_end)
         {
             return entry;
         }
@@ -49,13 +62,25 @@ std::optional<std::reference_wrapper<Arena::Event>> Arena::find_region_in_histor
     return std::nullopt;
 }
 
-bool Arena::available(std::uintptr_t memory)
+bool Arena::available(std::size_t addr, std::size_t length) const
 {
-    std::optional<std::reference_wrapper<Arena::Event>> event = this->find_region_in_history(memory);
+    const auto end = safe_add(addr, length);
 
-    if (event)
+    if (!end)
+        throw std::overflow_error("Arena allocation range overflow");
+
+    for (const Arena::Event& event : this->history)
     {
-        return event->get().state == Arena::EventState::FREE;
+        if (event.state != Arena::EventState::ALLOC)
+            continue;
+
+        const auto event_end = safe_add(event.region, event.size);
+
+        if (!event_end)
+            throw std::overflow_error("Arena event range overflow");
+
+        if (addr < *event_end && event.region < *end)
+            return false;
     }
 
     return true;

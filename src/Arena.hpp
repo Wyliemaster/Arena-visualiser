@@ -6,6 +6,8 @@
 #include <vector>
 #include <cstdlib>
 #include <optional>
+#include <limits>
+#include <stdexcept>
 
 class Arena
 {
@@ -13,10 +15,10 @@ public:
     Arena(std::size_t size, std::size_t alignment = alignof(std::max_align_t))
     {
         this->alignment = alignment;
-        
+
         if (this->alignment == 0)
-        throw std::bad_alloc{};
-        
+            throw std::bad_alloc{};
+
         std::size_t rounded_size = this->align(size);
         this->size = rounded_size;
 
@@ -50,8 +52,9 @@ private:
         return remainder == 0 ? sz : sz + this->alignment - remainder;
     }
 
-    bool available(std::uintptr_t memory);
-    std::optional<std::reference_wrapper<Arena::Event>>  find_region_in_history(std::uintptr_t memory);
+    bool available(std::size_t addr, std::size_t length) const;
+std::optional<std::reference_wrapper<Arena::Event>> find_contained_region(std::uintptr_t addr);
+
 
 private:
     void *arena;
